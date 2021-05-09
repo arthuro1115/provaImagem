@@ -1,0 +1,177 @@
+import cv2
+import numpy as np
+from matplotlib import pyplot as plt
+from sys import argv
+import math
+
+#-------------------------------------------------------------------------------------------
+try:
+
+    from PIL import Image
+except ImportError:
+    import Image
+    
+import pytesseract
+pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract'
+
+
+#thresholding
+def thresholding(image):
+    return cv2.threshold(image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
+
+#------------------------------------------------------------------------------------------
+#Ajusta o angulo da imagem e a recorta
+
+def selectImage(arquivo,valor):
+    cv2.destroyAllWindows()
+    original = cv2.imread(arquivo) #colorida
+    img = cv2.imread(arquivo,0) #monocromática = binária
+    (alt, lar) = img.shape[:2] #captura altura e largura
+    ret, imgT = cv2.threshold(img, 220, 255, cv2.THRESH_BINARY)#230
+
+    ############ descobrindo a inclinação da imagem
+    p1=0
+    p2=0
+    xi=lar
+    inc=0
+
+    for y in range (0,alt,1):
+        for x in range (0,lar,1):
+            cor = imgT[y,x] 
+            if cor!=255 and(p1==0): 
+                ponto1=(x,y)
+                xi=x
+                p1=1
+                if x>(lar/2):
+                    inc=1 # para saber se a inclinação é positiva ou negativa
+                            
+            if (p1==1) and (inc==1) and (cor!=255) and (x<xi):
+                ponto2=(x,y)
+                xi=x
+                
+            if (p1==1) and (inc==0) and (cor!=255) and (x>xi):
+                ponto2=(x,y)
+                xi=x
+
+    #cv2.circle(original, (ponto1), 5, (0, 255, 0), -1)
+    #cv2.circle(original, (ponto2), 5, (0, 255, 0), -1)
+
+    #cv2.imshow("Imagem original com marcações", original)
+                           
+    angulo = math.atan2 (ponto1[1]-ponto2[1],ponto1[0]-ponto2[0])
+    if inc==1:
+        angulo = math.degrees(angulo)
+    if inc==0:
+        angulo = math.degrees(angulo)+180
+        aux=ponto1
+        ponto1=ponto2
+        ponto2=aux
+        
+    print ('Inclinacao = ', angulo)
+
+    ############ girando a imagem monocromatica          
+    M = cv2.getRotationMatrix2D(ponto1, angulo, 1.0) 
+    img_rotacionada = cv2.warpAffine(imgT, M, (lar, alt))
+    #cv2.imshow("Imagem rotacionada", img_rotacionada)
+
+    ############ girando a imagem original  
+    original_rotacionada = cv2.warpAffine(original, M, (lar, alt))
+    #cv2.imshow("Original rotacionada", original_rotacionada)
+
+    ######### cortando a imagem original
+    pontoinicial=ponto1
+    larguraPlaca = 602
+    alturaPlaca = 295
+
+    xi=pontoinicial[0]-larguraPlaca
+    xf=pontoinicial[0]
+    yi=pontoinicial[1]
+    yf=pontoinicial[1]+alturaPlaca
+
+    recorte = original_rotacionada[yi:yf,xi:xf]
+    cv2.imshow("Recorte da imagem", recorte)
+    cv2.imwrite(valor, recorte) #salva no disco
+
+    cv2.waitKey(0)
+
+#----------------------------------------------------------------------------------------------------------------------
+
+#Passa como parametro o Diretorio da Imagem Recortada e reconhece o Texto
+def lerCodigoPlaca(slideEditText):
+   
+    slide1 = cv2.imread(slideEditText)
+
+    cv2.imshow('Mostra Slide Editado',slide1 )
+
+
+    ##Tratamento da Imagem para reconhecer as Letras
+    print ('Slide1')
+    a=(pytesseract.image_to_string(Image.open(slideEditText)))
+    print('Reconhecido: ', a)
+    print ();
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+def compararImagens(imageRecortada, imageGabarito):
+    original = cv2.imread(imageGabarito)
+    duplicate = cv2.imread(imageRecortada)
+
+
+    # 1) Check if 2 images are equals
+    if original.shape == duplicate.shape:
+        print("The images have same size and channels")
+
+    difference = cv2.subtract(original, duplicate)
+
+    b, g, r = cv2.split(difference)
+
+    for y in range (0,original.shape[0],1):
+        for x in range (0,original.shape[1],1):
+            if b[y,x] != 0 or g[y,x] != 0 or r[y,x] != 0:
+                duplicate [y,x]=(0,0,255)
+
+    if cv2.countNonZero(b) == 0 and cv2.countNonZero(g) == 0 and cv2.countNonZero(r) == 0:
+        print("As Imagens São Indenticas")
+
+    if cv2.countNonZero(b) != 0 or cv2.countNonZero(g) != 0 or cv2.countNonZero(r) != 0:
+        print("As Imagens Não São Complentamente Indenticas")
+
+    cv2.imshow("Original", original)
+    cv2.imshow("Duplicate", duplicate)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+#Gabarito Diretorio
+gabDirSlideAB01 = 'Gabarito AB01.jpg'
+gabDirSlideAB02 = 'Gabarito AB02.jpg'
+gabDirSlideAC01 = 'Gabarito AC01.jpg'
+gabDirSlideAC02 = 'Gabarito AC02.jpg'
+
+
+#Adicionar as Imagens e seus diretorios
+slide1Edit = 'Slide5edit.jpg'
+
+selectImage('FotosPlacas/Slide5.jpg', slide1Edit)
+
+#selectImage('FotosPlacas/Slide10.jpg','Slide10edit.jpg')
+
+lerCodigoPlaca(slide1Edit)
+
+compararImagens(slide1Edit, gabDirSlideAB01)
+
+
+#----------------------------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
