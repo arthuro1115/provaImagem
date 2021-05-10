@@ -116,7 +116,6 @@ def compararImagens(imageRecortada, imageGabarito):
     original = cv2.imread(imageGabarito)
     duplicate = cv2.imread(imageRecortada)
 
-
     # 1) Check if 2 images are equals
     if original.shape == duplicate.shape:
         print("The images have same size and channels")
@@ -138,8 +137,30 @@ def compararImagens(imageRecortada, imageGabarito):
 
     cv2.imshow("Original", original)
     cv2.imshow("Duplicate", duplicate)
+
     cv2.waitKey(0)
     cv2.destroyAllWindows()
+
+#----------------------------------------------------------------------------------------------------------------------
+
+def blackWhite(a,b):
+
+    image1 = cv2.imread(a)
+    image2 = cv2.imread(b)
+
+    ##### Tratamento da imagem ######
+    image1 = cv2.cvtColor(image1, cv2.COLOR_BGR2GRAY)
+    thresh = thresholding(image1)
+    cv2.imshow('Thresh',image1 )
+    cv2.imwrite('Slide5EditBW.jpg', image1 )
+
+    ##### Tratamento da imagem ######
+    image2 = cv2.cvtColor(image2, cv2.COLOR_BGR2GRAY)
+    thresh = thresholding(image2)
+    cv2.imshow('Thresh2',image2 )
+    cv2.imwrite('SlideGabBW.jpg', image2)
+    
+
 
 
 
@@ -151,6 +172,13 @@ gabDirSlideAB02 = 'Gabarito AB02.jpg'
 gabDirSlideAC01 = 'Gabarito AC01.jpg'
 gabDirSlideAC02 = 'Gabarito AC02.jpg'
 
+#Gabarito Ler Letras da Imagem
+#AB01
+#AB02
+#AC01
+#AC02
+
+
 
 #Adicionar as Imagens e seus diretorios
 slide1Edit = 'Slide5edit.jpg'
@@ -161,11 +189,11 @@ selectImage('FotosPlacas/Slide5.jpg', slide1Edit)
 
 lerCodigoPlaca(slide1Edit)
 
-compararImagens(slide1Edit, gabDirSlideAB01)
+blackWhite(slide1Edit, gabDirSlideAB01)
 
+compararImagens('Slide5EditBW.jpg', 'SlideGabBW.jpg')
 
-#----------------------------------------------------------------------------------------------------------------------
-
+#----------------------------------------------------------------------------------------------------------------------------
 
 
 
